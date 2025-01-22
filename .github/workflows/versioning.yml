@@ -1,0 +1,43 @@
+name: versioning
+
+on:
+  workflow_call:
+    outputs:
+      version:
+        description: the computed version
+        value: ${{ jobs.versioning.outputs.version }}
+      imageName:
+        description: docker image fullname
+        value: ${{ jobs.versioning.outputs.imageName }}
+
+jobs:
+  versioning:
+    runs-on: ubuntu-latest
+
+    outputs:
+      version: ${{ steps.versioning.outputs.version }}
+      imageName: ${{ steps.versioning.outputs.imageName }}
+
+    steps:
+
+    - name: Get the workflow scripts
+      uses: actions/checkout@v4
+      with:
+        repository: gg-math/actions
+        path: scripts
+
+    - name: Get the user code
+      uses: actions/checkout@v4
+      with:
+        path: code
+
+    - id: versioning
+      run: |
+        cd code
+        currentTag=$(../scripts/currentTag.sh)
+        version=${currentTag:-$(git rev-parse --short HEAD)}
+        imageName=ghcr.io/${{github.repository}}:$version
+        echo "version=$version" >> $GITHUB_OUTPUT
+        echo "imageName=$imageName" >> $GITHUB_OUTPUT
+        echo "## 🔖 New version '$version'" >> $GITHUB_STEP_SUMMARY
+        echo "## 📦 Image '$imageName'" >> $GITHUB_STEP_SUMMARY
